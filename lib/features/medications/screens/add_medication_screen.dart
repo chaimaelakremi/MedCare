@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/medication_providers.dart';
+import '../services/prescription_scanner.dart';
 
 const _colors = [
   Color(0xFF9B7EBD),
@@ -35,14 +36,15 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   TimeOfDay _time3 = const TimeOfDay(hour: 20, minute: 0);
   int _colorIdx = 0;
   bool _saving = false;
+  bool _scanning = false;
   Uint8List? _prescriptionBytes;
 
   // ── Prescription image ──────────────────────────────────────────────────────
 
   Future<void> _pickPrescription() async {
+    XFile? image;
     try {
-      final image =
-          await ImagePicker().pickImage(source: ImageSource.gallery);
+      image = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (image == null || !mounted) return;
       final bytes = await image.readAsBytes();
       if (!mounted) return;
@@ -58,7 +60,60 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
+      return;
     }
+
+    await _scanPrescription(image);
+  }
+
+  /// Pre-fills the form from the prescription photo with Gemini.
+  /// The user still reviews every field before saving.
+  Future<void> _scanPrescription(XFile image) async {
+    final l10n = ref.read(l10nProvider);
+    if (!PrescriptionScanner.isAvailable) {
+      _showInfo(l10n.get('scan_disabled'));
+      return;
+    }
+
+    setState(() => _scanning = true);
+    ScannedMedication? med;
+    var failed = false;
+    try {
+      med = await PrescriptionScanner.scan(image);
+    } catch (e) {
+      debugPrint('[AddMedication] Prescription scan failed: $e');
+      failed = true;
+    }
+    if (!mounted) return;
+    setState(() => _scanning = false);
+
+    if (med == null) {
+      _showInfo(l10n.get(failed ? 'scan_error' : 'scan_not_found'));
+      return;
+    }
+
+    final scanned = med;
+    setState(() {
+      _nameCtrl.text = scanned.name;
+      _doseCtrl.text = scanned.dose;
+      _frequency = scanned.frequency;
+      final times = scanned.times.map(_parseTime).whereType<TimeOfDay>().toList();
+      if (times.isNotEmpty) _time1 = times[0];
+      if (times.length > 1) _time2 = times[1];
+      if (times.length > 2) _time3 = times[2];
+    });
+    _showInfo(l10n.get('scan_success'));
+  }
+
+  void _showInfo(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   void _removePrescription() => setState(() => _prescriptionBytes = null);
@@ -107,6 +162,15 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
 
   String _fmt(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  TimeOfDay? _parseTime(String hhmm) {
+    final parts = hhmm.split(':');
+    if (parts.length != 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null || h > 23 || m > 59) return null;
+    return TimeOfDay(hour: h, minute: m);
+  }
 
   Future<void> _pickTime(int slot) async {
     final initial = slot == 1 ? _time1 : slot == 2 ? _time2 : _time3;
@@ -179,11 +243,32 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                               fit: BoxFit.cover,
                             ),
                           ),
+                          if (_scanning)
+                            Positioned.fill(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: ColoredBox(
+                                  color: Colors.black45,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const CircularProgressIndicator(
+                                          color: Colors.white),
+                                      const SizedBox(height: 12),
+                                      Text(l10n.get('scan_in_progress'),
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           Positioned(
                             top: 8,
                             right: 8,
                             child: GestureDetector(
-                              onTap: _removePrescription,
+                              onTap: _scanning ? null : _removePrescription,
                               child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
@@ -340,7 +425,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
 
                 // ── Save button ────────────────────────────────────────────
                 FilledButton(
-                  onPressed: _saving ? null : _save,
+                  onPressed: _saving || _scanning ? null : _save,
                   child: _saving
                       ? const SizedBox(
                           width: 22,

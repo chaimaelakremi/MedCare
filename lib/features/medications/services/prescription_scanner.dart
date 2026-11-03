@@ -1,9 +1,22 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:image_picker/image_picker.dart';
 
-// Replace with your Anthropic API key
-const _anthropicKey = 'ADD_ANTHROPIC_API_KEY_HERE';
+// Provided at build time, never hardcoded:
+//   flutter run --dart-define-from-file=.env
+// See .env.example. When the key is missing the scanner is disabled.
+const _apiKey = String.fromEnvironment('GEMINI_API_KEY');
+const _model =
+    String.fromEnvironment('GEMINI_MODEL', defaultValue: 'gemini-2.5-flash');
+
+const _prompt =
+    'This is a medical prescription. Extract the FIRST medication and return ONLY valid JSON: '
+    '{"name":"medication name","dose":"dosage with unit e.g. 500mg","frequency":"daily|twice_daily|thrice_daily|weekly","times":["08:00"]}. '
+    'Times use 24h HH:mm format. '
+    'If the image is not a prescription or is unreadable, return {"error":"not_a_prescription"}.';
+
+const _frequencies = {'daily', 'twice_daily', 'thrice_daily', 'weekly'};
 
 class ScannedMedication {
   final String name;
@@ -20,70 +33,66 @@ class ScannedMedication {
 }
 
 class PrescriptionScanner {
-  static Future<ScannedMedication?> scan(XFile image) async {
-    final bytes = await image.readAsBytes();
-    final base64Data = base64Encode(bytes);
-    final mimeType = _mime(image.name);
+  /// False when no GEMINI_API_KEY was provided at build time.
+  static bool get isAvailable => _apiKey.isNotEmpty;
 
-    final response = await http.post(
-      Uri.parse('https://api.anthropic.com/v1/messages'),
-      headers: {
-        'x-api-key': _anthropicKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: jsonEncode({
-        'model': 'claude-3-haiku-20240307',
-        'max_tokens': 512,
-        'messages': [
-          {
-            'role': 'user',
-            'content': [
-              {
-                'type': 'image',
-                'source': {
-                  'type': 'base64',
-                  'media_type': mimeType,
-                  'data': base64Data,
-                },
-              },
-              {
-                'type': 'text',
-                'text':
-                    'This is a medical prescription. Extract the FIRST medication and return ONLY valid JSON (no markdown, no explanation): '
-                    '{"name":"medication name","dose":"dosage with unit e.g. 500mg","frequency":"daily|twice_daily|thrice_daily","times":["08:00"]}. '
-                    'If not a prescription or unreadable, return {"error":"not_a_prescription"}.',
-              },
-            ],
-          },
-        ],
-      }),
+  /// Returns the first medication found, or null when the image is not a
+  /// readable prescription. Throws on network / API errors.
+  static Future<ScannedMedication?> scan(XFile image) async {
+    if (!isAvailable) return null;
+
+    final bytes = await image.readAsBytes();
+    final model = GenerativeModel(
+      model: _model,
+      apiKey: _apiKey,
+      generationConfig: GenerationConfig(
+        responseMimeType: 'application/json',
+        temperature: 0,
+      ),
     );
 
-    if (response.statusCode != 200) return null;
+    final response = await model.generateContent([
+      Content.multi([
+        DataPart(_mime(image.name), bytes),
+        TextPart(_prompt),
+      ]),
+    ]);
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final text = (data['content'] as List?)?.first['text'] as String? ?? '';
-
+    final text = response.text ?? '';
     final jsonMatch = RegExp(r'\{.*\}', dotAll: true).firstMatch(text);
     if (jsonMatch == null) return null;
 
-    final med = jsonDecode(jsonMatch.group(0)!) as Map<String, dynamic>;
-    if (med['error'] != null) return null;
+    try {
+      final med = jsonDecode(jsonMatch.group(0)!) as Map<String, dynamic>;
+      if (med['error'] != null) return null;
 
-    return ScannedMedication(
-      name: med['name'] as String? ?? '',
-      dose: med['dose'] as String? ?? '',
-      frequency: med['frequency'] as String? ?? 'daily',
-      times: (med['times'] as List?)?.cast<String>() ?? ['08:00'],
-    );
+      final name = (med['name'] as String? ?? '').trim();
+      if (name.isEmpty) return null;
+
+      final frequency = med['frequency'] as String? ?? 'daily';
+      final times = (med['times'] as List?)
+              ?.whereType<String>()
+              .where((t) => RegExp(r'^\d{1,2}:\d{2}$').hasMatch(t))
+              .toList() ??
+          const <String>[];
+
+      return ScannedMedication(
+        name: name,
+        dose: (med['dose'] as String? ?? '').trim(),
+        frequency: _frequencies.contains(frequency) ? frequency : 'daily',
+        times: times.isEmpty ? const ['08:00'] : times,
+      );
+    } on FormatException catch (e) {
+      debugPrint('[PrescriptionScanner] Invalid JSON: $e');
+      return null;
+    }
   }
 
   static String _mime(String filename) {
     final ext = filename.toLowerCase().split('.').last;
     if (ext == 'png') return 'image/png';
-    if (ext == 'gif') return 'image/gif';
     if (ext == 'webp') return 'image/webp';
+    if (ext == 'heic') return 'image/heic';
     return 'image/jpeg';
   }
 }

@@ -11,7 +11,8 @@ The interface is available in French (default) and English.
 ## Features
 
 **For the patient**
-- Add medications with name, dose, frequency (once, twice or three times a day), intake times and a colour tag
+- Add medications with name, dose, frequency (once, twice or three times a day, or weekly), intake times and a colour tag
+- AI prescription scanner: pick a photo of a prescription and Gemini pre-fills the name, dose, frequency and times. You review the fields before saving. Without an API key the scanner is turned off and the photo is just attached
 - Daily local reminders at each scheduled time (`flutter_local_notifications` + `timezone`)
 - Mark each dose as taken or missed, and log how you feel (😊 / 😐 / 😔) when you take it
 - Analytics screen: weekly bar chart, monthly calendar view, adherence rate and a list of missed doses
@@ -37,6 +38,7 @@ The interface is available in French (default) and English.
 | State management | Riverpod |
 | Navigation | go_router (auth- and role-aware redirects) |
 | Backend | Firebase Authentication, Cloud Firestore |
+| AI | Gemini API (`google_generative_ai`), multimodal prescription reading |
 | Notifications | flutter_local_notifications, timezone |
 | Charts & reports | fl_chart, pdf, printing |
 | Other | shared_preferences, google_fonts, flutter_animate, intl |
@@ -55,7 +57,7 @@ lib/
 │   └── theme/             # light/dark themes
 └── features/
     ├── auth/              # login, register, user document
-    ├── medications/       # medication CRUD, intake logs, home screen
+    ├── medications/       # medication CRUD, intake logs, home screen, Gemini scanner
     ├── notifications/     # local reminder scheduling
     ├── analytics/         # charts, calendar, adherence
     ├── family/            # family-code linking, caregiver screens, notifications
@@ -74,6 +76,7 @@ flowchart LR
     R --> FS[(Cloud Firestore)]
     P --> A[Firebase Auth]
     P --> N[Local notifications]
+    UI -->|prescription photo| G[Gemini API]
 
     subgraph Firestore
         U[users/uid] --> M[medications]
@@ -86,16 +89,28 @@ When a dose is marked as taken or missed, the app writes a notification into the
 
 ## Screenshots
 
-| Onboarding | Patient home | Analytics |
-|---|---|---|
-| _coming soon_ | _coming soon_ | _coming soon_ |
-
-| Caregiver home | PDF report | MedAssist |
-|---|---|---|
-| _coming soon_ | _coming soon_ | _coming soon_ |
-
-<!-- Add images to a docs/screenshots/ folder and reference them like:
-![Patient home](docs/screenshots/home.png) -->
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/onboarding.png" width="250" alt="Onboarding"><br><sub>Onboarding: reminders, mood and stats overview</sub></td>
+    <td align="center"><img src="docs/screenshots/login.png" width="250" alt="Login"><br><sub>Email / password sign-in</sub></td>
+    <td align="center"><img src="docs/screenshots/register.png" width="250" alt="Register"><br><sub>Sign-up with patient or caregiver role</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/patient-home.png" width="250" alt="Patient home"><br><sub>Today's doses: taken, missed and upcoming</sub></td>
+    <td align="center"><img src="docs/screenshots/mood-check.png" width="250" alt="Mood check"><br><sub>Mood check after taking a dose</sub></td>
+    <td align="center"><img src="docs/screenshots/add-medication.png" width="250" alt="Add medication"><br><sub>New medication: prescription photo, dose, frequency, time, colour</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/assistant.png" width="250" alt="Assistant"><br><sub>MedAssist chat</sub></td>
+    <td align="center"><img src="docs/screenshots/settings-dark.png" width="250" alt="Settings"><br><sub>Settings in dark mode, FR / EN language switch</sub></td>
+    <td align="center"><img src="docs/screenshots/caregiver-home.png" width="250" alt="Caregiver home"><br><sub>Caregiver dashboard: daily adherence and dose status</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/caregiver-report.png" width="250" alt="Caregiver report"><br><sub>7-day report with PDF export</sub></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
 
 ## Getting started
 
@@ -134,9 +149,28 @@ flutterfire configure
 
 > The app imports `lib/firebase_options.dart`, so it won't compile until this file exists.
 
-### 3. Run
+### 3. Add a Gemini API key (optional)
+
+The prescription scanner needs a Gemini API key. The rest of the app works without one.
+
+1. Create a key in [Google AI Studio](https://aistudio.google.com/apikey).
+2. Copy `.env.example` to `.env` (git-ignored) and set your key:
+
+   ```env
+   GEMINI_API_KEY=your_key_here
+   ```
+
+The key is passed at build time with `--dart-define-from-file`, so it never appears in the source code. You can also change the model with `GEMINI_MODEL` (default: `gemini-2.5-flash`).
+
+> For a production app, call Gemini from a backend instead (Cloud Functions, for example). Any key compiled into a mobile app can be extracted from it.
+
+### 4. Run
 
 ```bash
+# with the AI scanner
+flutter run --dart-define-from-file=.env
+
+# without it
 flutter run
 ```
 
