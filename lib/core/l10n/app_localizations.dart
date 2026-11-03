@@ -1,0 +1,208 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class AppLocalizations {
+  final String locale;
+  const AppLocalizations(this.locale);
+
+  String get(String key) => _s[locale]?[key] ?? _s['fr']![key] ?? key;
+
+  static const Map<String, Map<String, String>> _s = {
+    'fr': {
+      'app_name': 'MedCare',
+      'login': 'Se connecter',
+      'register': "S'inscrire",
+      'email': 'Email',
+      'password': 'Mot de passe',
+      'name': 'Nom complet',
+      'confirm_password': 'Confirmer le mot de passe',
+      'no_account': "Pas encore de compte ? S'inscrire",
+      'have_account': 'Déjà un compte ? Se connecter',
+      'role_select': 'Je suis...',
+      'role_patient': 'Patient',
+      'role_family': 'Aidant / Famille',
+      'home': 'Accueil',
+      'analytics': 'Analyses',
+      'chatbot': 'Assistant',
+      'family': 'Famille',
+      'settings': 'Réglages',
+      'medications_today': "Médicaments d'aujourd'hui",
+      'no_medications': 'Aucun médicament planifié',
+      'add_medication': 'Ajouter un médicament',
+      'med_name': 'Nom du médicament',
+      'med_dose': 'Dosage (ex: 500mg)',
+      'med_time': 'Heure de prise',
+      'med_frequency': 'Fréquence',
+      'freq_daily': 'Quotidien (1x/jour)',
+      'freq_twice': '2 fois par jour',
+      'freq_thrice': '3 fois par jour',
+      'freq_weekly': 'Hebdomadaire',
+      'save': 'Enregistrer',
+      'cancel': 'Annuler',
+      'taken': 'Pris',
+      'missed': 'Oublié',
+      'pending': 'À prendre',
+      'how_feel': 'Comment vous sentez-vous ?',
+      'mood_great': 'Très bien 😊',
+      'mood_ok': 'Bien 😐',
+      'mood_bad': 'Pas bien 😔',
+      'greeting_morning': 'Bonjour',
+      'greeting_afternoon': 'Bon après-midi',
+      'greeting_evening': 'Bonsoir',
+      'chatbot_greeting': 'Bonjour ! Je suis votre assistant santé bienveillant 💜\nComment puis-je vous aider aujourd\'hui ?',
+      'chatbot_hint': 'Écrivez votre message...',
+      'chatbot_title': 'Assistant Santé',
+      'family_code': 'Votre code famille',
+      'family_link': 'Lier un patient',
+      'family_enter_code': 'Entrez le code du patient',
+      'family_confirm_link': 'Lier',
+      'family_linked': 'Patient lié',
+      'family_medications': 'Médicaments du patient',
+      'analytics_title': 'Analyses',
+      'compliance': "Taux d'observance",
+      'last_7_days': '7 derniers jours',
+      'missed_today': "Oubliés aujourd'hui",
+      'generate_pdf': 'Générer le rapport PDF',
+      'logout': 'Se déconnecter',
+      'language': 'Langue',
+      'profile': 'Profil',
+      'err_required': 'Ce champ est requis',
+      'err_email': 'Email invalide',
+      'err_pass_short': 'Au moins 6 caractères',
+      'err_pass_match': 'Les mots de passe ne correspondent pas',
+      'success_med_added': 'Médicament ajouté avec succès !',
+      'err_generic': 'Une erreur est survenue. Réessayez.',
+      'take_now': 'Prendre',
+      'mark_missed': 'Oublié',
+      'daily_summary': 'Résumé du jour',
+      'taken_count': 'pris',
+      'missed_count': 'oubliés',
+      'upcoming_count': 'à venir',
+      'weekly_report': 'Rapport hebdomadaire',
+      'share_pdf': 'Partager le PDF',
+      'color_pick': 'Couleur',
+      'second_time': '2ème prise',
+      'third_time': '3ème prise',
+      'add_med_title': 'Nouveau médicament',
+      'compliance_perfect': 'Parfait ! Continuez ainsi 🌟',
+      'compliance_good': 'Bonne observance 👍',
+      'compliance_fair': 'Peut mieux faire 💪',
+      'compliance_poor': 'Consultez votre médecin ⚠️',
+      'no_data': 'Aucune donnée pour cette période',
+      'family_code_copied': 'Code copié !',
+      'patient_not_found': 'Patient introuvable. Vérifiez le code.',
+      'already_linked': 'Vous êtes déjà lié à ce patient.',
+    },
+    'en': {
+      'app_name': 'MedCare',
+      'login': 'Sign In',
+      'register': 'Sign Up',
+      'email': 'Email',
+      'password': 'Password',
+      'name': 'Full Name',
+      'confirm_password': 'Confirm Password',
+      'no_account': "Don't have an account? Sign Up",
+      'have_account': 'Already have an account? Sign In',
+      'role_select': 'I am...',
+      'role_patient': 'Patient',
+      'role_family': 'Caregiver / Family',
+      'home': 'Home',
+      'analytics': 'Analytics',
+      'chatbot': 'Assistant',
+      'family': 'Family',
+      'settings': 'Settings',
+      'medications_today': "Today's Medications",
+      'no_medications': 'No medications scheduled',
+      'add_medication': 'Add Medication',
+      'med_name': 'Medication Name',
+      'med_dose': 'Dosage (e.g.: 500mg)',
+      'med_time': 'Time to take',
+      'med_frequency': 'Frequency',
+      'freq_daily': 'Daily (1x/day)',
+      'freq_twice': 'Twice daily',
+      'freq_thrice': 'Three times daily',
+      'freq_weekly': 'Weekly',
+      'save': 'Save',
+      'cancel': 'Cancel',
+      'taken': 'Taken',
+      'missed': 'Missed',
+      'pending': 'Upcoming',
+      'how_feel': 'How do you feel?',
+      'mood_great': 'Great 😊',
+      'mood_ok': 'Good 😐',
+      'mood_bad': 'Not well 😔',
+      'greeting_morning': 'Good morning',
+      'greeting_afternoon': 'Good afternoon',
+      'greeting_evening': 'Good evening',
+      'chatbot_greeting': 'Hello! I am your caring health assistant 💜\nHow can I help you today?',
+      'chatbot_hint': 'Write your message...',
+      'chatbot_title': 'Health Assistant',
+      'family_code': 'Your family code',
+      'family_link': 'Link a patient',
+      'family_enter_code': "Enter the patient's code",
+      'family_confirm_link': 'Link',
+      'family_linked': 'Linked patient',
+      'family_medications': "Patient's medications",
+      'analytics_title': 'Analytics',
+      'compliance': 'Compliance rate',
+      'last_7_days': 'Last 7 days',
+      'missed_today': 'Missed today',
+      'generate_pdf': 'Generate PDF report',
+      'logout': 'Sign Out',
+      'language': 'Language',
+      'profile': 'Profile',
+      'err_required': 'This field is required',
+      'err_email': 'Invalid email',
+      'err_pass_short': 'At least 6 characters',
+      'err_pass_match': 'Passwords do not match',
+      'success_med_added': 'Medication added successfully!',
+      'err_generic': 'An error occurred. Please try again.',
+      'take_now': 'Take Now',
+      'mark_missed': 'Mark Missed',
+      'daily_summary': 'Daily Summary',
+      'taken_count': 'taken',
+      'missed_count': 'missed',
+      'upcoming_count': 'upcoming',
+      'weekly_report': 'Weekly Report',
+      'share_pdf': 'Share PDF',
+      'color_pick': 'Color',
+      'second_time': '2nd dose',
+      'third_time': '3rd dose',
+      'add_med_title': 'New Medication',
+      'compliance_perfect': 'Perfect! Keep it up 🌟',
+      'compliance_good': 'Good compliance 👍',
+      'compliance_fair': 'Room for improvement 💪',
+      'compliance_poor': 'Please consult your doctor ⚠️',
+      'no_data': 'No data for this period',
+      'family_code_copied': 'Code copied!',
+      'patient_not_found': 'Patient not found. Check the code.',
+      'already_linked': 'You are already linked to this patient.',
+    },
+  };
+}
+
+class LocaleNotifier extends Notifier<String> {
+  @override
+  String build() {
+    _load();
+    return 'fr';
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getString('locale') ?? 'fr';
+  }
+
+  Future<void> setLocale(String locale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('locale', locale);
+    state = locale;
+  }
+}
+
+final localeProvider = NotifierProvider<LocaleNotifier, String>(LocaleNotifier.new);
+
+final l10nProvider = Provider<AppLocalizations>((ref) {
+  final locale = ref.watch(localeProvider);
+  return AppLocalizations(locale);
+});

@@ -1,0 +1,38 @@
+name: medcare
+description: "MedCare - Application de rappel médicaments pour patients chroniques"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  firebase_core: ^4.8.0
+  firebase_auth: ^6.5.0
+  cloud_firestore: ^6.4.0
+  flutter_riverpod: ^3.3.1
+  go_router: ^17.2.3
+  google_generative_ai: ^0.4.7
+  flutter_animate: ^4.5.2
+  google_fonts: ^8.1.0
+  flutter_local_notifications: ^19.0.0
+  timezone: ^0.10.1
+  intl: ^0.20.0
+  shared_preferences: ^2.3.5
+  pdf: ^3.10.8
+  printing: ^5.13.2
+  path_provider: ^2.1.4
+  fl_chart: ^0.69.0
+  image_picker: ^1.1.2
+  http: ^1.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
