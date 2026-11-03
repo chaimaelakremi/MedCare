@@ -185,6 +185,6 @@ If Firebase can't be reached on startup, the app retries three times and then op
 
 ## License
 
-This project is released under the [MIT License](LICENSE).
+© 2026 Chaima Elakremi. All rights reserved. See [LICENSE](LICENSE).
 
 MedCare is a student project and is not a medical device. It does not replace advice from a doctor or pharmacist.
